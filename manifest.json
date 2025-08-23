@@ -2,7 +2,7 @@
   "name": "Pocket Timelock Journal",
   "short_name": "Timelock",
   "description": "A secure, local diary for preserving your thoughts and memories with timestamping and sealing functionality.",
-  "start_url": "/",
+  "start_url": "/timelock",
   "display": "standalone",
   "background_color": "#FDFDFD",
   "theme_color": "#2C3E50",
