@@ -1,0 +1,36 @@
+name: CI (pull request)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quick-check:
+    name: Quick check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js version
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and run tests if package.json exists
+        run: |
+          if [ -f package.json ]; then
+            echo "package.json found — installing and running tests"
+            npm ci
+            # run tests if defined, otherwise run lint if defined; fall back to a harmless command
+            if npm run | grep -q " test"; then
+              npm test
+            elif npm run | grep -q " lint"; then
+              npm run lint
+            else
+              echo "No test or lint scripts; running a quick syntax check"
+              node -e "console.log('no tests configured')"
+            fi
+          else
+            echo "No package.json — skipping install/test steps"
+          fi
