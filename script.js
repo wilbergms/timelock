@@ -39,6 +39,8 @@ class PocketTimelockJournal {
             localStorage.setItem('timelock-entries', JSON.stringify(this.entries));
             if (this.pinData) {
                 localStorage.setItem('timelock-pin', JSON.stringify(this.pinData));
+            } else {
+                localStorage.removeItem('timelock-pin');
             }
         } catch (error) {
             console.error('Error saving data:', error);
@@ -56,6 +58,7 @@ class PocketTimelockJournal {
             createdAt: now.toISOString(),
             editedAt: now.toISOString(),
             isSealed: false,
+            locked: false, // <-- new: pin-locked state
             hash: null
         };
         
@@ -69,6 +72,9 @@ class PocketTimelockJournal {
         const entry = this.entries.find(e => e.id === id);
         if (!entry || entry.isSealed) return false;
         
+        // Prevent updates when locked (unless unlocked for session)
+        if (entry.locked && !entry.unlockedForSession) return false;
+        
         Object.assign(entry, updates);
         entry.editedAt = new Date().toISOString();
         this.saveData();
@@ -81,6 +87,9 @@ class PocketTimelockJournal {
         
         entry.isSealed = true;
         entry.hash = this.generateHash(entry.title + entry.content + entry.editedAt);
+        // sealed entries should also be considered locked logically
+        entry.locked = false;
+        entry.unlockedForSession = false;
         this.saveData();
         this.showToast('Entry sealed successfully', 'success');
         return true;
@@ -90,16 +99,18 @@ class PocketTimelockJournal {
         const entry = this.entries.find(e => e.id === id);
         if (!entry) return false;
         
-        // Check if PIN is required for sealed entries
-        if (entry.isSealed && this.pinData) {
+        // Check if PIN is required for sealed entries or locked entries (if PIN protection enabled)
+        if ((entry.isSealed || entry.locked) && this.pinData) {
             const confirmed = await this.showConfirmation(
-                'Delete Sealed Entry',
-                'This will permanently delete a sealed memory. This action cannot be undone.'
+                entry.isSealed ? 'Delete Sealed Entry' : 'Delete Locked Entry',
+                entry.isSealed
+                    ? 'This will permanently delete a sealed memory. This action cannot be undone.'
+                    : 'This will delete a PIN-locked entry. You will need to verify your PIN to proceed.'
             );
             
             if (!confirmed) return false;
             
-            const pinVerified = await this.verifyPin('Enter your PIN to delete this sealed entry:');
+            const pinVerified = await this.verifyPin('Enter your PIN to delete this entry:');
             if (!pinVerified) return false;
         } else {
             const confirmed = await this.showConfirmation(
@@ -145,6 +156,17 @@ class PocketTimelockJournal {
         this.populateEditor();
         this.updateTimestamps();
         
+        // Notify the bridge about the opened entry so it can update lock UI
+        if (this.currentEntry) {
+            window.dispatchEvent(new CustomEvent('entry-opened', {
+                detail: {
+                    entryId: this.currentEntry.id,
+                    locked: !!this.currentEntry.locked,
+                    sealed: !!this.currentEntry.isSealed
+                }
+            }));
+        }
+        
         // Focus on title if empty, otherwise content
         setTimeout(() => {
             const titleInput = document.getElementById('entry-title');
@@ -169,10 +191,13 @@ class PocketTimelockJournal {
         titleInput.value = this.currentEntry.title;
         contentInput.value = this.currentEntry.content;
         
-        // Disable editing if sealed
+        // Disable editing if sealed or locked (unless unlocked for session)
         const isSealed = this.currentEntry.isSealed;
-        titleInput.disabled = isSealed;
-        contentInput.disabled = isSealed;
+        const isLocked = !!this.currentEntry.locked;
+        const unlockedForSession = !!this.currentEntry.unlockedForSession;
+
+        titleInput.disabled = isSealed || (isLocked && !unlockedForSession);
+        contentInput.disabled = isSealed || (isLocked && !unlockedForSession);
         sealBtn.disabled = isSealed;
         
         if (isSealed) {
@@ -225,15 +250,26 @@ class PocketTimelockJournal {
                 Sealed
             </div>
         ` : '';
+
+        const lockIcon = entry.locked ? `
+            <div class="lock-indicator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0110 0v4"></path>
+                </svg>
+                Locked
+            </div>
+        ` : '';
         
         return `
-            <div class="entry-card ${entry.isSealed ? 'sealed' : ''}" data-entry-id="${entry.id}">
+            <div class="entry-card ${entry.isSealed ? 'sealed' : ''} ${entry.locked ? 'locked' : ''}" data-entry-id="${entry.id}">
                 <div class="entry-header">
                     <div>
                         <div class="entry-title ${!entry.title ? 'untitled' : ''}">${title}</div>
                         <div class="entry-meta">
                             <span>${this.formatDate(entry.createdAt)}</span>
                             ${sealIcon}
+                            ${lockIcon}
                         </div>
                     </div>
                 </div>
@@ -249,6 +285,7 @@ class PocketTimelockJournal {
         
         const handleInput = () => {
             if (!this.currentEntry || this.currentEntry.isSealed) return;
+            if (this.currentEntry.locked && !this.currentEntry.unlockedForSession) return; // block autosave when locked
             
             this.showAutosaveStatus('saving');
             
@@ -294,6 +331,10 @@ class PocketTimelockJournal {
         // Navigation
         document.getElementById('new-entry-btn').addEventListener('click', () => this.createEntry());
         document.getElementById('back-btn').addEventListener('click', () => {
+            // Clear unlocked session flag when leaving editor
+            if (this.currentEntry) {
+                this.currentEntry.unlockedForSession = false;
+            }
             this.showScreen('entry-list-screen');
             this.renderEntryList();
         });
@@ -334,6 +375,61 @@ class PocketTimelockJournal {
         
         // Setup autosave
         this.setupAutosave();
+
+        // Listen for pin-lock bridge events
+        window.addEventListener('pin-lock-request-state', (e) => {
+            const entryId = e.detail && e.detail.entryId;
+            const editor = document.getElementById('entry-editor-screen');
+            if (!editor) return;
+            const entry = this.entries.find(en => en.id === entryId);
+            editor.dataset.locked = entry && entry.locked ? 'true' : 'false';
+        });
+
+        window.addEventListener('pin-lock-toggle', async (e) => {
+            const { entryId, willLock } = e.detail || {};
+            if (!entryId) return;
+            const entry = this.entries.find(en => en.id === entryId);
+            if (!entry) return;
+
+            // If trying to lock but no PIN configured, open PIN setup
+            if (willLock && !this.pinData) {
+                await this.showPinSetup();
+                if (!this.pinData) {
+                    // user didn't set PIN; revert UI by dispatching state-changed with locked=false
+                    window.dispatchEvent(new CustomEvent('pin-lock-state-changed', { detail: { entryId, locked: false } }));
+                    return;
+                }
+            }
+
+            if (willLock) {
+                // Lock the entry
+                entry.locked = true;
+                entry.unlockedForSession = false;
+                this.saveData();
+                window.dispatchEvent(new CustomEvent('pin-lock-state-changed', { detail: { entryId, locked: true } }));
+                window.dispatchEvent(new CustomEvent('render-lock-indicator', { detail: { entryId, locked: true } }));
+                this.showToast('Entry locked with PIN', 'success');
+                this.renderEntryList();
+            } else {
+                // Unlock: require PIN verification
+                const ok = await this.verifyPin('Enter your PIN to unlock this entry:');
+                if (!ok) {
+                    // Revert UI state back to locked
+                    window.dispatchEvent(new CustomEvent('pin-lock-state-changed', { detail: { entryId, locked: true } }));
+                    return;
+                }
+                entry.locked = false;
+                // mark session unlocked so edits allowed during this open editor
+                entry.unlockedForSession = true;
+                this.saveData();
+                window.dispatchEvent(new CustomEvent('pin-lock-state-changed', { detail: { entryId, locked: false } }));
+                window.dispatchEvent(new CustomEvent('render-lock-indicator', { detail: { entryId, locked: false } }));
+                this.showToast('Entry unlocked', 'success');
+                // update UI now that unlockedForSession changed
+                if (this.currentEntry && this.currentEntry.id === entryId) this.populateEditor();
+                this.renderEntryList();
+            }
+        });
         
         // Modal events will be bound when modals are shown
     }
@@ -854,4 +950,3 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
-
