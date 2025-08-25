@@ -2,255 +2,143 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2C3E50">
     <title>Pocket Timelock Journal</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Georgia:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Main App Container -->
-    <div id="app">
-        
+    <div id="app-container">
         <!-- Entry List Screen -->
         <div id="entry-list-screen" class="screen active">
-            <header class="app-header">
-                <h1 class="app-title">Pocket Timelock</h1>
-                <button id="settings-btn" class="icon-btn" aria-label="Settings">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m17-4a4 4 0 01-8 0 4 4 0 018 0zM7 21a4 4 0 01-8 0 4 4 0 018 0z"></path>
-                    </svg>
-                </button>
-            </header>
-            
-            <main class="entry-list-container">
-                <div id="empty-state" class="empty-state">
-                    <div class="empty-icon">📝</div>
-                    <h2>Your Journal Awaits</h2>
-                    <p>Start capturing your thoughts and memories. Every entry will be timestamped and can be sealed to preserve it forever.</p>
-                </div>
-                
-                <div id="entry-list" class="entry-list">
-                    <!-- Entries will be dynamically inserted here -->
-                </div>
-            </main>
-            
-            <button id="new-entry-btn" class="fab" aria-label="New Entry">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-            </button>
+            <div class="header">
+                <h1>Pocket Timelock Journal</h1>
+                <button id="settings-btn" class="header-btn">Settings</button>
+            </div>
+            <div id="empty-state" class="empty-state">
+                <p>No entries yet. Start by creating a new memory!</p>
+            </div>
+            <div id="entry-list" class="entry-list"></div>
+            <button id="new-entry-btn" class="main-action-btn">+ New Entry</button>
         </div>
 
         <!-- Entry Editor Screen -->
         <div id="entry-editor-screen" class="screen">
-            <header class="editor-header">
-                <button id="back-btn" class="icon-btn" aria-label="Back">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5m7-7l-7 7 7 7"></path>
-                    </svg>
-                </button>
-                <div class="entry-timestamps">
-                    <div id="created-time" class="timestamp"></div>
-                    <div id="edited-time" class="timestamp"></div>
+            <div class="editor-header">
+                <button id="back-btn" type="button" class="editor-nav-btn">Back</button>
+                <button id="settings-btn" type="button" class="editor-nav-btn">Settings</button>
+            </div>
+            <div class="editor-main">
+                <input id="entry-title" type="text" placeholder="Title" autocomplete="off" />
+                <textarea id="entry-content" rows="10" placeholder="Write your memory here..."></textarea>
+                <div class="editor-timestamps">
+                    <span id="created-time"></span>
+                    <span id="edited-time"></span>
                 </div>
-                <button id="seal-btn" class="seal-btn" aria-label="Seal Entry">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <circle cx="12" cy="16" r="1"></circle>
-                        <path d="M7 11V7a5 5 0 0110 0v4"></path>
-                    </svg>
-                </button>
-            </header>
-            
-            <main class="editor-container">
-                <input type="text" id="entry-title" class="entry-title-input" placeholder="Entry title (optional)" maxlength="100">
-                <textarea id="entry-content" class="entry-content-input" placeholder="What's on your mind?"></textarea>
-            </main>
-            
-            <footer class="editor-footer">
-                <button id="delete-entry-btn" class="delete-btn" aria-label="Delete Entry">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3,6 5,6 21,6"></polyline>
-                        <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"></path>
-                        <line x1="10" y1="11" x2="10" y2="17"></line>
-                        <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                    Delete
-                </button>
-                <div class="autosave-indicator" id="autosave-indicator">
+                <div class="editor-actions">
+                    <button id="seal-btn" type="button" class="editor-action-btn">Seal</button>
+                    <button id="lock-btn" type="button" class="editor-action-btn">Lock</button>
+                    <button id="delete-entry-btn" type="button" class="editor-action-btn">Delete</button>
+                </div>
+                <div id="autosave-indicator" class="autosave-indicator">
                     <span class="autosave-text">Saved</span>
                 </div>
-            </footer>
+            </div>
         </div>
 
         <!-- Settings Screen -->
         <div id="settings-screen" class="screen">
-            <header class="settings-header">
-                <button id="settings-back-btn" class="icon-btn" aria-label="Back">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5m7-7l-7 7 7 7"></path>
-                    </svg>
-                </button>
+            <div class="settings-header">
+                <button id="settings-back-btn" class="header-btn">Back</button>
                 <h2>Settings</h2>
-            </header>
-            
-            <main class="settings-container">
-                <section class="settings-section">
-                    <h3>PIN Protection</h3>
-                    <p class="settings-description">Protect deletion of sealed entries with a PIN</p>
-                    
-                    <div id="pin-not-set" class="pin-status">
-                        <button id="setup-pin-btn" class="settings-btn primary">Set Up PIN</button>
-                    </div>
-                    
-                    <div id="pin-set" class="pin-status hidden">
-                        <div class="pin-info">
-                            <span class="pin-status-text">PIN Protection: Enabled</span>
-                        </div>
-                        <button id="change-pin-btn" class="settings-btn">Change PIN</button>
-                        <button id="remove-pin-btn" class="settings-btn danger">Remove PIN</button>
-                    </div>
-                </section>
-                
-                <section class="settings-section">
-                    <h3>Data Management</h3>
-                    <p class="settings-description">Manage your journal data</p>
-                    <button id="export-data-btn" class="settings-btn">Export All Entries</button>
-                    <button id="clear-all-btn" class="settings-btn danger">Clear All Data</button>
-                </section>
-                
-                <section class="settings-section">
-                    <h3>About</h3>
-                    <p class="settings-description">Pocket Timelock Journal v1.0</p>
-                    <p class="settings-description small">A secure, local diary for preserving your thoughts and memories.</p>
-                </section>
-            </main>
+            </div>
+            <div class="settings-main">
+                <div id="pin-not-set">
+                    <p>No PIN protection enabled.</p>
+                    <button id="setup-pin-btn" class="settings-action-btn">Set Up PIN</button>
+                </div>
+                <div id="pin-set" class="hidden">
+                    <p>PIN protection is <strong>enabled</strong>.</p>
+                    <button id="change-pin-btn" class="settings-action-btn">Change PIN</button>
+                    <button id="remove-pin-btn" class="settings-action-btn">Remove PIN</button>
+                </div>
+                <hr>
+                <button id="export-data-btn" class="settings-action-btn">Export Data</button>
+                <button id="clear-all-btn" class="settings-action-btn">Clear All Data</button>
+            </div>
         </div>
-    </div>
 
-    <!-- PIN Setup Modal -->
-    <div id="pin-setup-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
+        <!-- Confirmation Modal -->
+        <div id="confirmation-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="confirmation-title"></h3>
+                <p id="confirmation-message"></p>
+                <div class="modal-actions">
+                    <button id="confirmation-cancel-btn" class="modal-btn">Cancel</button>
+                    <button id="confirmation-confirm-btn" class="modal-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PIN Setup Modal -->
+        <div id="pin-setup-modal" class="modal">
+            <div class="modal-content">
                 <h3 id="pin-modal-title">Set Up PIN</h3>
-                <button id="pin-modal-close" class="icon-btn" aria-label="Close">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <div id="pin-step-1" class="pin-step">
-                    <p class="pin-instruction">Enter a 4-digit PIN to protect deletion of sealed entries:</p>
-                    <div class="pin-input-container">
-                        <input type="password" id="pin-input-1" class="pin-input" maxlength="4" pattern="[0-9]{4}" placeholder="••••">
-                    </div>
+                <div id="pin-step-1">
+                    <p>Enter a 4-digit PIN:</p>
+                    <input type="password" id="pin-input-1" maxlength="4" pattern="\d{4}" autocomplete="off"/>
                 </div>
-                
-                <div id="pin-step-2" class="pin-step hidden">
-                    <p class="pin-instruction">Confirm your PIN:</p>
-                    <div class="pin-input-container">
-                        <input type="password" id="pin-input-2" class="pin-input" maxlength="4" pattern="[0-9]{4}" placeholder="••••">
-                    </div>
+                <div id="pin-step-2" class="hidden">
+                    <p>Confirm your 4-digit PIN:</p>
+                    <input type="password" id="pin-input-2" maxlength="4" pattern="\d{4}" autocomplete="off"/>
                 </div>
-                
-                <div id="security-question-step" class="pin-step hidden">
-                    <p class="pin-instruction">Set up a security question for PIN recovery:</p>
-                    <input type="text" id="security-question-input" class="text-input" placeholder="Enter your security question" maxlength="200">
-                    <input type="text" id="security-answer-input" class="text-input" placeholder="Enter your answer" maxlength="100">
-                    <p class="help-text">Choose a question only you would know the answer to. This will help you recover your PIN if forgotten.</p>
+                <div id="security-question-step" class="hidden">
+                    <p>Set a security question for PIN recovery:</p>
+                    <input type="text" id="security-question-input" placeholder="E.g. What is your favorite childhood book?" autocomplete="off"/>
+                    <input type="text" id="security-answer-input" placeholder="Answer" autocomplete="off"/>
                 </div>
-                
-                <div class="pin-error" id="pin-error"></div>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="pin-cancel-btn" class="btn secondary">Cancel</button>
-                <button id="pin-continue-btn" class="btn primary">Continue</button>
+                <div id="pin-error" class="modal-error"></div>
+                <div class="modal-actions">
+                    <button id="pin-cancel-btn" class="modal-btn">Cancel</button>
+                    <button id="pin-continue-btn" class="modal-btn">Continue</button>
+                    <button id="pin-modal-close" class="modal-btn hidden">Close</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- PIN Verification Modal -->
-    <div id="pin-verify-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Enter PIN</h3>
-            </div>
-            
-            <div class="modal-body">
-                <p id="pin-verify-message" class="pin-instruction">Enter your PIN to proceed:</p>
-                <div class="pin-input-container">
-                    <input type="password" id="pin-verify-input" class="pin-input" maxlength="4" pattern="[0-9]{4}" placeholder="••••">
+        <!-- PIN Verify Modal -->
+        <div id="pin-verify-modal" class="modal">
+            <div class="modal-content">
+                <h3>PIN Verification</h3>
+                <p id="pin-verify-message"></p>
+                <input type="password" id="pin-verify-input" maxlength="4" pattern="\d{4}" autocomplete="off"/>
+                <div id="pin-verify-error" class="modal-error"></div>
+                <div class="modal-actions">
+                    <button id="pin-verify-cancel-btn" class="modal-btn">Cancel</button>
+                    <button id="pin-verify-submit-btn" class="modal-btn">Submit</button>
+                    <button id="forgot-pin-btn" class="modal-btn">Forgot PIN?</button>
                 </div>
-                <div class="pin-error" id="pin-verify-error"></div>
-                <button id="forgot-pin-btn" class="link-btn">Forgot PIN?</button>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="pin-verify-cancel-btn" class="btn secondary">Cancel</button>
-                <button id="pin-verify-submit-btn" class="btn primary">Verify</button>
             </div>
         </div>
-    </div>
 
-    <!-- PIN Recovery Modal -->
-    <div id="pin-recovery-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Recover PIN</h3>
-                <button id="recovery-modal-close" class="icon-btn" aria-label="Close">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            
-            <div class="modal-body">
-                <p class="pin-instruction">Answer your security question:</p>
-                <div class="security-question-display" id="security-question-display"></div>
-                <input type="text" id="security-answer-verify" class="text-input" placeholder="Enter your answer">
-                <div class="pin-error" id="recovery-error"></div>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="recovery-cancel-btn" class="btn secondary">Cancel</button>
-                <button id="recovery-submit-btn" class="btn primary">Verify Answer</button>
+        <!-- PIN Recovery Modal -->
+        <div id="pin-recovery-modal" class="modal">
+            <div class="modal-content">
+                <h3>PIN Recovery</h3>
+                <p id="security-question-display"></p>
+                <input type="text" id="security-answer-verify" placeholder="Answer" autocomplete="off"/>
+                <div id="recovery-error" class="modal-error"></div>
+                <div class="modal-actions">
+                    <button id="recovery-cancel-btn" class="modal-btn">Cancel</button>
+                    <button id="recovery-submit-btn" class="modal-btn">Submit</button>
+                    <button id="recovery-modal-close" class="modal-btn hidden">Close</button>
+                </div>
             </div>
         </div>
+
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
     </div>
-
-    <!-- Confirmation Modal -->
-    <div id="confirmation-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="confirmation-title">Confirm Action</h3>
-            </div>
-            
-            <div class="modal-body">
-                <p id="confirmation-message">Are you sure you want to proceed?</p>
-            </div>
-            
-            <div class="modal-footer">
-                <button id="confirmation-cancel-btn" class="btn secondary">Cancel</button>
-                <button id="confirmation-confirm-btn" class="btn primary">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="toast-container"></div>
-
     <script src="script.js"></script>
 </body>
 </html>
-
