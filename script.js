@@ -81,6 +81,93 @@ class PocketTimelockJournal {
         return true;
     }
 
+    // --- PATCHED CODE for Lock/Unlock Button ---
+// Add these methods and event bindings inside the PocketTimelockJournal class
+
+class PocketTimelockJournal {
+    // ...existing code...
+
+    renderLockButton() {
+        const lockBtn = document.getElementById('lock-btn');
+        if (!lockBtn || !this.currentEntry) return;
+        lockBtn.textContent = this.currentEntry.locked ? 'Unlock' : 'Lock';
+        lockBtn.disabled = !!this.currentEntry.isSealed;
+    }
+
+    showEditor(entry = null) {
+        if (entry) {
+            this.currentEntry = entry;
+        }
+        this.showScreen('entry-editor-screen');
+        this.populateEditor();
+        this.updateTimestamps();
+        this.renderLockButton(); // <-- call this after updating editor
+        // ...existing code...
+        // Notify the bridge about the opened entry so it can update lock UI
+        if (this.currentEntry) {
+            window.dispatchEvent(new CustomEvent('entry-opened', {
+                detail: {
+                    entryId: this.currentEntry.id,
+                    locked: !!this.currentEntry.locked,
+                    sealed: !!this.currentEntry.isSealed
+                }
+            }));
+        }
+        setTimeout(() => {
+            const titleInput = document.getElementById('entry-title');
+            const contentInput = document.getElementById('entry-content');
+            if (!this.currentEntry.title) {
+                titleInput.focus();
+            } else {
+                contentInput.focus();
+                contentInput.setSelectionRange(contentInput.value.length, contentInput.value.length);
+            }
+        }, 100);
+    }
+
+    populateEditor() {
+        if (!this.currentEntry) return;
+        const titleInput = document.getElementById('entry-title');
+        const contentInput = document.getElementById('entry-content');
+        const sealBtn = document.getElementById('seal-btn');
+
+        titleInput.value = this.currentEntry.title;
+        contentInput.value = this.currentEntry.content;
+
+        const isSealed = this.currentEntry.isSealed;
+        const isLocked = !!this.currentEntry.locked;
+        const unlockedForSession = !!this.currentEntry.unlockedForSession;
+
+        titleInput.disabled = isSealed || (isLocked && !unlockedForSession);
+        contentInput.disabled = isSealed || (isLocked && !unlockedForSession);
+        sealBtn.disabled = isSealed;
+
+        // ...existing seal icon code...
+
+        this.renderLockButton(); // <-- call this to update lock button state
+    }
+
+    bindEvents() {
+        // ...existing bindings...
+
+        // Lock button
+        document.getElementById('lock-btn').addEventListener('click', () => {
+            if (this.currentEntry && !this.currentEntry.isSealed) {
+                window.dispatchEvent(new CustomEvent('pin-lock-toggle', {
+                    detail: {
+                        entryId: this.currentEntry.id,
+                        willLock: !this.currentEntry.locked
+                    }
+                }));
+            }
+        });
+
+        // ...existing bindings...
+    }
+
+    // ...existing code...
+}
+
     sealEntry(id) {
         const entry = this.entries.find(e => e.id === id);
         if (!entry || entry.isSealed) return false;
